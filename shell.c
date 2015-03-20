@@ -224,60 +224,55 @@ int execute_simple_command(simple_command *cmd) {
 	 * - The parent should wait for the child.
 	 *   (see wait man pages).
 	 */
-   int builtin = cmd->builtin;
-   int exit_code;
+	int builtin = cmd->builtin;
+ 	int exit_code;
 
-   if (builtin == BUILTIN_CD) {
-     exit_code = execute_cd(cmd->tokens);
+ 	if (builtin == BUILTIN_CD) {
+		exit_code = execute_cd(cmd->tokens);
 
-     if (exit_code != 0) {
-       if (exit_code == EXIT_FAILURE) {
-         printf("cd: usage: cd [dir]\n");
-       } else if (exit_code == -1) {
-         printf("%s: cd: %s: No such file or directory\n",shellname, cmd->tokens[1]);
-       }
-       else {
-         printf("cd failed with exit code: %d\n", exit_code);
-       }
-     }
+ 		if (exit_code != 0) {
+ 			if (exit_code == EXIT_FAILURE) {
+   			printf("cd: usage: cd [dir]\n");
+   		} else if (exit_code == -1) {
+   		printf("%s: cd: %s: No such file or directory\n",shellname, cmd->tokens[1]);
+   		} else {
+   			printf("cd failed with exit code: %d\n", exit_code);
+   		}
+		}
+	} else if (builtin == BUILTIN_EXIT) {
+		exit(0);
+	} else {
+ 		// non-builtin command
 
+ 		// process id and status
+   	pid_t pid;
+   	pid_t status;
+   	// fork
+   	pid = fork();
 
-   } else if (builtin == BUILTIN_EXIT) {
-     exit(0);
+   	if (pid < 0) {
+     	perror("fork()");
+		} else if (pid > 0) {
+     	// parent
 
-   } else {
-     // non-builtin command
-
-		 // process id and status
-	   pid_t pid;
-	   pid_t status;
-	   // fork
-     pid = fork();
-
-	   if (pid < 0) {
-	     perror("fork()");
-
-	   } else if (pid > 0) {
-	     // parent
-
-	     // child has exited
-	     pid_t exit_code;
-	     if (wait(&status) != -1) {
-	       if (WIFEXITED(status)) {
-				  exit_code = WEXITSTATUS(status);
+     	// child has exited
+     	pid_t exit_code;
+     	if (wait(&status) != -1) {
+       	if (WIFEXITED(status)) {
+			  	exit_code = WEXITSTATUS(status);
 					if (exit_code != 0) {
 						printf("got exit code as: %d\n", exit_code);
 					}
-	       }
-	     }
+       	}
+     	}
 
-	   } else if (pid == 0) {
-				// child
-			 execute_nonbuiltin(cmd);
-		 }
-   }
+   	} else if (pid == 0) {
+			// child
+		 	execute_nonbuiltin(cmd);
+	 	}
+ 	}
 
-   return 0;
+ 	return 0;
 }
 
 
@@ -295,6 +290,10 @@ int execute_complex_command(command *c) {
 	 * Execute nonbuiltin commands only. If it's exit or cd, you should not
 	 * execute these in a piped context, so simply ignore builtin commands.
 	 */
+
+	if (!c->scmd) {
+		printf("in complex\n");
+	}
 
 
 
