@@ -1,2 +1,5 @@
 *.o
 shell
+in
+out
+err

@@ -188,9 +188,12 @@ int execute_nonbuiltin(simple_command *s) {
 
 	if (s->in) {
 		printf("in: %s\n", s->in);
+		int fd_in = open(s->in, O_RDONLY, S_IRUSR | S_IWUSR);
+		dup2(fd_in, fileno(stdin));
 	}
 	if (s->out) {
-		printf("out: %s\n", s->out);
+		int fd_out = open(s->out, O_WRONLY | O_CREAT, S_IRUSR | S_IWUSR);
+		dup2(fd_out, fileno(stdout));
 	}
 	if (s->err) {
 		printf("err: %s\n", s->err);
