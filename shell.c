@@ -32,7 +32,6 @@ char *shellname = "swagshell";
 
 
 int main(int argc, char** argv) {
-
   // Current working directory
 	char cwd[MAX_DIRNAME];
   // The command
@@ -41,7 +40,6 @@ int main(int argc, char** argv) {
 	char *tokens[MAX_TOKEN];
 
 	while (1) {
-
 		// Display prompt
 		getcwd(cwd, MAX_DIRNAME-1);
 		printf("%s> ", cwd);
@@ -95,39 +93,16 @@ int main(int argc, char** argv) {
  *       absolute path:  cd /u/bogdan/csc209/assignment3/
  */
 int execute_cd(char** words) {
-
-	/**
-	 * TODO:
-	 * The first word contains the "cd" string, the second one contains
-	 * the path.
-	 * Check possible errors:
-	 * - The words pointer could be NULL, the first string or the second
-	 *   string could be NULL, or the first string is not a cd command
-	 * - If so, return an EXIT_FAILURE status to indicate something is
-	 *   wrong.
-	 */
-
-   if (words == NULL || words[0] == NULL || words[1] == NULL ||
-       strcmp(words[0], "cd") != 0 || words[2] != NULL) {
-     return EXIT_FAILURE;
-
-   } else {
-     return chdir(words[1]);
-   }
-
-
-	/**
-	 * TODO:
-	 * The safest way would be to first determine if the path is relative
-	 * or absolute (see is_relative function provided).
-	 * - If it's not relative, then simply change the directory to the path
-	 * specified in the second word in the array.
-	 * - If it's relative, then make sure to get the current working
-	 * directory, append the path in the second word to the current working
-	 * directory and change the directory to this path.
-	 * Hints: see chdir and getcwd man pages.
-	 * Return the success/error code obtained when changing the directory.
-	 */
+	// check possible errors
+	// null pointers, check if cd command, too many args
+ 	if (words == NULL || words[0] == NULL || words[1] == NULL ||
+     	strcmp(words[0], "cd") != 0 || words[2] != NULL) {
+   	return EXIT_FAILURE;
+ 	} else {
+		// no errors, change directory
+		// chdir handles absolute/relative itself
+   	return chdir(words[1]);
+ 	}
 }
 
 
@@ -140,32 +115,22 @@ int execute_cd(char** words) {
  * followed by a NULL token.
  */
 int execute_command(char **tokens) {
+	// Execute an external program
+	// pass in command name,  vector of arguments
+	execvp(tokens[0], tokens);
 
-	/**
-	 * TODO: execute a program, based on the tokens provided.
-	 * The first token is the command name, the rest are the arguments
-	 * for the command.
-	 * Hint: see execlp/execvp man pages.
-	 *
-	 * - In case of error, make sure to use "perror" to indicate the name
-	 *   of the command that failed.
-	 *   You do NOT have to print an identical error message to what would
-	 *   happen in bash.
-	 *   If you use perror, an output like:
-	 *      my_silly_command: No such file of directory
-	 *   would suffice.
-	 * Function returns only in case of a failure (EXIT_FAILURE).
-	 */
+	// This code only reachable if execvp returned -1 (failed)
+	// Build an error message
+	char *inter = ": ";
+	int len = strlen(shellname) + strlen(tokens[0]) + strlen(inter) + 4;
+	char message[len];
 
-	int error_code = execvp(tokens[0], tokens);
+	strncat(message, shellname, strlen(shellname));
+	strncat(message, inter, strlen(inter));
+	strncat(message, tokens[0], strlen(tokens[0]));
 
-	if (error_code == -1){
-		fprintf(stderr, "%s: %s: failed\n", shellname, tokens[0]);
-		return EXIT_FAILURE;
-	} else if (error_code != 0) {
-		printf("received exit code as %d\n", error_code);
-	}
-	return 0;
+	perror(message);
+	return EXIT_FAILURE;
 }
 
 
@@ -173,39 +138,61 @@ int execute_command(char **tokens) {
  * Executes a non-builtin command.
  */
 int execute_nonbuiltin(simple_command *s) {
-	/**
-	 * TODO: Check if the in, out, and err fields are set (not NULL),
-	 * and, IN EACH CASE:
-	 * - Open a new file descriptor (make sure you have the correct flags,
-	 *   and permissions);
-	 * - redirect stdin/stdout/stderr to the corresponding file.
-	 *   (hint: see dup2 man pages).
-	 * - close the newly opened file descriptor in the parent as well.
-	 *   (Avoid leaving the file descriptor open across an exec!)
-	 * - finally, execute the command using the tokens (see execute_command
-	 *   function above).
-	 * This function returns only if the execution of the program fails.
-	 */
-
+	// The following if blocks follow this template:
+	// 1. create a file descriptor with proper flags and modes
+	// 2. redirect file descriptor
+	// 3. close old file descriptor
 	if (s->in) {
 		int fd_in = open(s->in, O_RDONLY, S_IRUSR | S_IWUSR);
-		dup2(fd_in, fileno(stdin));
+
+		if(dup2(fd_in, fileno(stdin)) == -1) {
+			perror("dup2");
+		}
+
+		if (close(fd_in) == -1) {
+			perror("close");
+		}
 	}
 	if (s->out && s->err) {
 		int fd_out_err = open(s->out, O_WRONLY | O_CREAT | O_TRUNC, S_IRUSR | S_IWUSR);
-		dup2(fd_out_err, fileno(stdout));
-		dup2(fd_out_err, fileno(stderr));
+
+		if (dup2(fd_out_err, fileno(stdout)) == -1) {
+			perror("dup2");
+		}
+		if (dup2(fd_out_err, fileno(stderr)) == -1) {
+			perror("dup2");
+		}
+
+		if (close(fd_out_err) == -1) {
+			perror("close");
+		}
 	} else if (s->out) {
 		int fd_out = open(s->out, O_WRONLY | O_CREAT | O_TRUNC, S_IRUSR | S_IWUSR);
-		dup2(fd_out, fileno(stdout));
+
+		if (dup2(fd_out, fileno(stdout)) == -1) {
+			perror("dup2");
+		}
+
+		if (close(fd_out) == -1) {
+			perror("close");
+		}
 	} else if (s->err) {
 		int fd_err = open(s->err, O_WRONLY | O_CREAT | O_TRUNC, S_IRUSR);
-		dup2(fd_err, fileno(stderr));
+
+		if (dup2(fd_err, fileno(stderr)) == -1) {
+			perror("dup2");
+		}
+
+		if (close(fd_err) == -1) {
+			perror("close");
+		}
 	}
 
-	execute_command(s->tokens);
+	// Execute the command
+	int error_code = execute_command(s->tokens);
 
-	exit(0);
+	// This code only reachable if execute_command returned EXIT_FAILURE
+	return error_code;
 }
 
 
@@ -213,24 +200,14 @@ int execute_nonbuiltin(simple_command *s) {
  * Executes a simple command (no pipes).
  */
 int execute_simple_command(simple_command *cmd) {
-
-	/**
-	 * TODO:
-	 * Check if the command is builtin.
-	 * 1. If it is, then handle BUILTIN_CD (see execute_cd function provided)
-	 *    and BUILTIN_EXIT (simply exit with an appropriate exit status).
-	 * 2. If it isn't, then you must execute the non-builtin command.
-	 * - Fork a process to execute the nonbuiltin command
-	 *   (see execute_nonbuiltin function above).
-	 * - The parent should wait for the child.
-	 *   (see wait man pages).
-	 */
 	int builtin = cmd->builtin;
  	int exit_code;
 
+	// check if command is builtin
  	if (builtin == BUILTIN_CD) {
 		exit_code = execute_cd(cmd->tokens);
 
+		// messages for cd failure
  		if (exit_code != 0) {
  			if (exit_code == EXIT_FAILURE) {
    			printf("cd: usage: cd [dir]\n");
@@ -241,6 +218,7 @@ int execute_simple_command(simple_command *cmd) {
    		}
 		}
 	} else if (builtin == BUILTIN_EXIT) {
+		// user typed 'exit'
 		exit(0);
 	} else {
  		// non-builtin command
@@ -252,7 +230,7 @@ int execute_simple_command(simple_command *cmd) {
    	pid = fork();
 
    	if (pid < 0) {
-     	perror("fork()");
+     	perror("fork");
 		} else if (pid > 0) {
      	// parent
 
@@ -262,7 +240,7 @@ int execute_simple_command(simple_command *cmd) {
        	if (WIFEXITED(status)) {
 			  	exit_code = WEXITSTATUS(status);
 					if (exit_code != 0) {
-						printf("got exit code as: %d\n", exit_code);
+						//printf("got exit code as: %d\n", exit_code);
 					}
        	}
      	}
@@ -282,53 +260,35 @@ int execute_simple_command(simple_command *cmd) {
  * together with a pipe operator.
  */
 int execute_complex_command(command *c) {
-
-	/**
-	 * TODO:
-	 * Check if this is a simple command, using the scmd field.
-	 * Remember that this will be called recursively, so when you encounter
-	 * a simple command you should act accordingly.
-	 * Execute nonbuiltin commands only. If it's exit or cd, you should not
-	 * execute these in a piped context, so simply ignore builtin commands.
-	 */
-
+	// execute simple command
 	if (c->scmd) {
 		execute_nonbuiltin(c->scmd);
 	}
 
-
-
-	/**
-	 * Optional: if you wish to handle more than just the
-	 * pipe operator '|' (the '&&', ';' etc. operators), then
-	 * you can add more options here.
-	 */
-
+	// encountered a complex command
 	if (!strcmp(c->oper, "|")) {
-
-		/**
-		 * TODO: Create a pipe "pfd" that generates a pair of file
-		 * descriptors, to be used for communication between the
-		 * parent and the child. Make sure to check any errors in
-		 * creating the pipe.
-		 */
-
+		// file descriptors
 		int pfd[2];
-		pipe(pfd);
+		// pip
+		if (pipe(pfd) == -1) {
+			perror("pipe");
+		}
+		// will fork again so two process ids
 		pid_t pid[2];
-		//pid_t status;
 
+		// fork
 	  pid[0] = fork();
 
 		if (pid[0] < 0) {
-			perror("fork()");
+			perror("fork");
 		} else if (pid[0] > 0) {
 			// parent
 
+			// fork again
 			pid[1] = fork();
 
 			if (pid[1] < 0) {
-				perror("fork()");
+				perror("fork");
 			} else if (pid[1] > 0) {
 				// parent
 
@@ -336,6 +296,7 @@ int execute_complex_command(command *c) {
 				close(pfd[0]);
 				close(pfd[1]);
 
+				// wait for _both_ children to exit
 				wait(NULL);
 				wait(NULL);
 
@@ -345,45 +306,36 @@ int execute_complex_command(command *c) {
 				// close writing
 				close(pfd[1]);
 
-				dup2(pfd[0], fileno(stdin));
+				// redirect input file descriptor to stdin
+				if (dup2(pfd[0], fileno(stdin)) == -1) {
+					perror("dup2");
+				}
+
+				if (close(pfd[0]) == -1) {
+					perror("close");
+				}
 
 				execute_complex_command(c->cmd2);
 				exit(1);
-
 			}
 		} else if (pid[0] == 0) {
 			// child
+
 			// close reading
 			close(pfd[0]);
 
-			dup2(pfd[1], fileno(stdout));
+			// redirect output file descriptor to stdout
+			if (dup2(pfd[1], fileno(stdout)) == -1) {
+				perror("dup2");
+			}
+
+			if (close(pfd[1]) == -1) {
+				perror("close");
+			}
 
 			execute_complex_command(c->cmd1);
 			exit(1);
 		}
-
-		/**
-		 * TODO: Fork a new process.
-		 * In the child:
-		 *  - close one end of the pipe pfd and close the stdout
-		 * file descriptor.
-		 *  - connect the stdout to the other end of the pipe (the
-		 * one you didn't close).
-		 *  - execute complex command cmd1 recursively.
-		 * In the parent:
-		 *  - fork a new process to execute cmd2 recursively.
-		 *  - In child 2:
-		 *     - close one end of the pipe pfd (the other one than
-		 *       the first child), and close the standard input file
-		 *       descriptor.
-		 *     - connect the stdin to the other end of the pipe (the
-		 *       one you didn't close).
-		 *     - execute complex command cmd2 recursively.
-		 *  - In the parent:
-		 *     - close both ends of the pipe.
-		 *     - wait for both children to finish.
-		 */
-
 	}
 	return 0;
 }
