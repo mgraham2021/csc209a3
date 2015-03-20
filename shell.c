@@ -157,10 +157,13 @@ int execute_command(char **tokens) {
 	 * Function returns only in case of a failure (EXIT_FAILURE).
 	 */
 
-	if (execvp(tokens[0], tokens) == -1){
-		fprintf("%s: %s: failed\n", shellname, tokens[0]);
+	int error_code = execvp(tokens[0], tokens);
+
+	if (error_code == -1){
+		fprintf(stderr, "%s: %s: failed\n", shellname, tokens[0]);
 		return EXIT_FAILURE;
 	}
+	printf("execvp returned %d\n", error_code);
 	return 0;
 }
 
@@ -183,9 +186,16 @@ int execute_nonbuiltin(simple_command *s) {
 	 * This function returns only if the execution of the program fails.
 	 */
 
-	printf("in: %s\n", s->in);
-	printf("out: %s\n", s->out);
-	printf("err: %s\n", s->err);
+	if (s->in) {
+		printf("in: %s\n", s->in);
+	}
+	if (s->out) {
+		printf("out: %s\n", s->out);
+	}
+	if (s->err) {
+		printf("err: %s\n", s->err);
+	}
+
 
 	execute_command(s->tokens);
 
@@ -245,12 +255,14 @@ int execute_simple_command(simple_command *cmd) {
 	   } else if (pid > 0) {
 	     // parent
 
-	     // partner has exited
+	     // child has exited
 	     pid_t exit_code;
 	     if (wait(&status) != -1) {
 	       if (WIFEXITED(status)) {
 				  exit_code = WEXITSTATUS(status);
-          printf("got exit code as: %d\n", exit_code);
+					if (exit_code != 0) {
+						printf("got exit code as: %d\n", exit_code);
+					}
 	       }
 	     }
 
