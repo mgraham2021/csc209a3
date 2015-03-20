@@ -347,6 +347,7 @@ int execute_complex_command(command *c) {
 				dup2(pfd[0], fileno(stdin));
 
 				execute_complex_command(c->cmd2);
+				exit(1);
 
 			}
 		} else if (pid[0] == 0) {
@@ -357,6 +358,7 @@ int execute_complex_command(command *c) {
 			dup2(pfd[1], fileno(stdout));
 
 			execute_complex_command(c->cmd1);
+			exit(1);
 		}
 
 		/**
