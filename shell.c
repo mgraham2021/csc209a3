@@ -14,7 +14,7 @@
 /**
  * Program that simulates a simple shell.
  * The shell covers basic commands, including builtin commands
- * (cd and exit only), standard I/O redirection and piping (|). 
+ * (cd and exit only), standard I/O redirection and piping (|).
  */
 
 #define MAX_DIRNAME 100
@@ -117,6 +117,8 @@ int execute_cd(char** words) {
 	 * Return the success/error code obtained when changing the directory.
 	 */
 
+   printf("doing cd\n");
+   return 0;
 }
 
 
@@ -146,7 +148,7 @@ int execute_command(char **tokens) {
 	 * Function returns only in case of a failure (EXIT_FAILURE).
 	 */
 
-
+   return 0;
 }
 
 
@@ -168,7 +170,7 @@ int execute_nonbuiltin(simple_command *s) {
 	 * This function returns only if the execution of the program fails.
 	 */
 
-
+   return 0;
 }
 
 
@@ -188,7 +190,18 @@ int execute_simple_command(simple_command *cmd) {
 	 * - The parent should wait for the child.
 	 *   (see wait man pages).
 	 */
+   int builtin = cmd->builtin;
 
+   if (builtin == 0) {
+     printf("non built in\n");
+   }
+   else if (builtin == 1) {
+     execute_cd(cmd->tokens);
+   } else if (builtin == 2) {
+     exit(0);
+   }
+
+   return 0;
 }
 
 
