@@ -102,6 +102,15 @@ int execute_cd(char** words) {
 	 *   wrong.
 	 */
 
+   if (words == NULL || words[0] == NULL || words[1] == NULL ||
+       strcmp(words[0], "cd") != 0 || words[2] != NULL) {
+     printf("usage: cd [path]\n");
+     return EXIT_FAILURE;
+   } else {
+     printf("words[0]: %s\n", words[0]);
+     printf("words[1]: %s\n", words[1]);
+     printf("%d\n", strcmp(words[0], "cd"));
+   }
 
 
 	/**
@@ -117,7 +126,6 @@ int execute_cd(char** words) {
 	 * Return the success/error code obtained when changing the directory.
 	 */
 
-   printf("doing cd\n");
    return 0;
 }
 
@@ -169,6 +177,32 @@ int execute_nonbuiltin(simple_command *s) {
 	 *   function above).
 	 * This function returns only if the execution of the program fails.
 	 */
+   // process id and status
+   pid_t pid;
+   pid_t status;
+
+   // fork
+   pid = fork();
+
+   if (pid < 0) {
+     perror("fork()");
+   } else if (pid > 0) {
+     // parent
+     printf("parent here!\n");
+
+     // partner has exited
+     pid_t exit_code;
+     if (wait(&status) != -1) {
+       if (WIFEXITED(status)) {
+         exit_code = WEXITSTATUS(status);
+         printf("got exit code as: %d\n", exit_code);
+       }
+     }
+
+   } else if (pid == 0) {
+     printf("child here!\n");
+     exit(0);
+   }
 
    return 0;
 }
@@ -197,7 +231,8 @@ int execute_simple_command(simple_command *cmd) {
    } else if (builtin == BUILTIN_EXIT) {
      exit(0);
    } else {
-     printf("non built in\n");
+     // non-builtin command
+     execute_nonbuiltin(cmd);
    }
 
    return 0;
