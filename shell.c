@@ -157,7 +157,11 @@ int execute_command(char **tokens) {
 	 * Function returns only in case of a failure (EXIT_FAILURE).
 	 */
 
-   return 0;
+	if (execvp(tokens[0], tokens) == -1){
+		fprintf("%s: %s: failed\n", shellname, tokens[0]);
+		return EXIT_FAILURE;
+	}
+	return 0;
 }
 
 
@@ -179,8 +183,13 @@ int execute_nonbuiltin(simple_command *s) {
 	 * This function returns only if the execution of the program fails.
 	 */
 
-   printf("child here!\n");
-	 exit(0);
+	printf("in: %s\n", s->in);
+	printf("out: %s\n", s->out);
+	printf("err: %s\n", s->err);
+
+	execute_command(s->tokens);
+
+	exit(0);
 }
 
 
@@ -232,9 +241,9 @@ int execute_simple_command(simple_command *cmd) {
 
 	   if (pid < 0) {
 	     perror("fork()");
+
 	   } else if (pid > 0) {
 	     // parent
-	     printf("parent here!\n");
 
 	     // partner has exited
 	     pid_t exit_code;
@@ -246,10 +255,9 @@ int execute_simple_command(simple_command *cmd) {
 	     }
 
 	   } else if (pid == 0) {
+				// child
 			 execute_nonbuiltin(cmd);
 		 }
-
-
    }
 
    return 0;
