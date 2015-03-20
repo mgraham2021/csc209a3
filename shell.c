@@ -192,13 +192,12 @@ int execute_simple_command(simple_command *cmd) {
 	 */
    int builtin = cmd->builtin;
 
-   if (builtin == 0) {
-     printf("non built in\n");
-   }
-   else if (builtin == 1) {
+   if (builtin == BUILTIN_CD) {
      execute_cd(cmd->tokens);
-   } else if (builtin == 2) {
+   } else if (builtin == BUILTIN_EXIT) {
      exit(0);
+   } else {
+     printf("non built in\n");
    }
 
    return 0;
