@@ -190,15 +190,17 @@ int execute_nonbuiltin(simple_command *s) {
 		int fd_in = open(s->in, O_RDONLY, S_IRUSR | S_IWUSR);
 		dup2(fd_in, fileno(stdin));
 	}
-	if (s->out) {
-		int fd_out = open(s->out, O_WRONLY | O_CREAT, S_IRUSR | S_IWUSR);
+	if (s->out && s->err) {
+		int fd_out_err = open(s->out, O_WRONLY | O_CREAT | O_TRUNC, S_IRUSR | S_IWUSR);
+		dup2(fd_out_err, fileno(stdout));
+		dup2(fd_out_err, fileno(stderr));
+	} else if (s->out) {
+		int fd_out = open(s->out, O_WRONLY | O_CREAT | O_TRUNC, S_IRUSR | S_IWUSR);
 		dup2(fd_out, fileno(stdout));
-	}
-	if (s->err) {
-		int fd_err = open(s->err, O_WRONLY | O_CREAT, S_IRUSR);
+	} else if (s->err) {
+		int fd_err = open(s->err, O_WRONLY | O_CREAT | O_TRUNC, S_IRUSR);
 		dup2(fd_err, fileno(stderr));
 	}
-
 
 	execute_command(s->tokens);
 
