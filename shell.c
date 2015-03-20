@@ -178,34 +178,9 @@ int execute_nonbuiltin(simple_command *s) {
 	 *   function above).
 	 * This function returns only if the execution of the program fails.
 	 */
-   // process id and status
-   pid_t pid;
-   pid_t status;
 
-   // fork
-   pid = fork();
-
-   if (pid < 0) {
-     perror("fork()");
-   } else if (pid > 0) {
-     // parent
-     printf("parent here!\n");
-
-     // partner has exited
-     pid_t exit_code;
-     if (wait(&status) != -1) {
-       if (WIFEXITED(status)) {
-         exit_code = WEXITSTATUS(status);
-         printf("got exit code as: %d\n", exit_code);
-       }
-     }
-
-   } else if (pid == 0) {
-     printf("child here!\n");
-     exit(0);
-   }
-
-   return 0;
+   printf("child here!\n");
+	 exit(0);
 }
 
 
@@ -248,7 +223,33 @@ int execute_simple_command(simple_command *cmd) {
 
    } else {
      // non-builtin command
-     execute_nonbuiltin(cmd);
+
+		 // process id and status
+	   pid_t pid;
+	   pid_t status;
+	   // fork
+     pid = fork();
+
+	   if (pid < 0) {
+	     perror("fork()");
+	   } else if (pid > 0) {
+	     // parent
+	     printf("parent here!\n");
+
+	     // partner has exited
+	     pid_t exit_code;
+	     if (wait(&status) != -1) {
+	       if (WIFEXITED(status)) {
+				  exit_code = WEXITSTATUS(status);
+          printf("got exit code as: %d\n", exit_code);
+	       }
+	     }
+
+	   } else if (pid == 0) {
+			 execute_nonbuiltin(cmd);
+		 }
+
+
    }
 
    return 0;
