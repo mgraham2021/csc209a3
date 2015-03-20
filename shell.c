@@ -162,8 +162,9 @@ int execute_command(char **tokens) {
 	if (error_code == -1){
 		fprintf(stderr, "%s: %s: failed\n", shellname, tokens[0]);
 		return EXIT_FAILURE;
+	} else if (error_code != 0) {
+		printf("received exit code as %d\n", error_code);
 	}
-	printf("execvp returned %d\n", error_code);
 	return 0;
 }
 
