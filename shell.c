@@ -21,42 +21,47 @@
 #define MAX_COMMAND 1024
 #define MAX_TOKEN 128
 
-/* Functions to implement, see below after main */
+// Functions to implement, see below after main
 int execute_cd(char** words);
 int execute_nonbuiltin(simple_command *s);
 int execute_simple_command(simple_command *cmd);
 int execute_complex_command(command *cmd);
 
+// cause you only yolo once, right?
+char *shellname = "swagshell";
+
 
 int main(int argc, char** argv) {
 
-	char cwd[MAX_DIRNAME];           /* Current working directory */
-	char command_line[MAX_COMMAND];  /* The command */
-	char *tokens[MAX_TOKEN];         /* Command tokens (program name,
-					  * parameters, pipe, etc.) */
+  // Current working directory
+	char cwd[MAX_DIRNAME];
+  // The command
+	char command_line[MAX_COMMAND];
+  // Command tokens (program name, * parameters, pipe, etc.)
+	char *tokens[MAX_TOKEN];
 
 	while (1) {
 
-		/* Display prompt */
+		// Display prompt
 		getcwd(cwd, MAX_DIRNAME-1);
 		printf("%s> ", cwd);
 
-		/* Read the command line */
+		// Read the command line
 		fgets(command_line, MAX_COMMAND, stdin);
-		/* Strip the new line character */
+		// Strip the new line character
 		if (command_line[strlen(command_line) - 1] == '\n') {
 			command_line[strlen(command_line) - 1] = '\0';
 		}
 
-		/* Parse the command into tokens */
+		// Parse the command into tokens
 		parse_line(command_line, tokens);
 
-		/* Check for empty command */
+		// Check for empty command
 		if (!(*tokens)) {
 			continue;
 		}
 
-		/* Construct chain of commands, if multiple commands */
+		// Construct chain of commands, if multiple commands
 		command *cmd = construct_command(tokens);
 		//print_command(cmd, 0);
 
@@ -104,12 +109,10 @@ int execute_cd(char** words) {
 
    if (words == NULL || words[0] == NULL || words[1] == NULL ||
        strcmp(words[0], "cd") != 0 || words[2] != NULL) {
-     printf("usage: cd [path]\n");
      return EXIT_FAILURE;
+
    } else {
-     printf("words[0]: %s\n", words[0]);
-     printf("words[1]: %s\n", words[1]);
-     printf("%d\n", strcmp(words[0], "cd"));
+     return chdir(words[1]);
    }
 
 
@@ -125,8 +128,6 @@ int execute_cd(char** words) {
 	 * Hints: see chdir and getcwd man pages.
 	 * Return the success/error code obtained when changing the directory.
 	 */
-
-   return 0;
 }
 
 
@@ -225,11 +226,26 @@ int execute_simple_command(simple_command *cmd) {
 	 *   (see wait man pages).
 	 */
    int builtin = cmd->builtin;
+   int exit_code;
 
    if (builtin == BUILTIN_CD) {
-     execute_cd(cmd->tokens);
+     exit_code = execute_cd(cmd->tokens);
+
+     if (exit_code != 0) {
+       if (exit_code == EXIT_FAILURE) {
+         printf("cd: usage: cd [dir]\n");
+       } else if (exit_code == -1) {
+         printf("%s: cd: %s: No such file or directory\n",shellname, cmd->tokens[1]);
+       }
+       else {
+         printf("cd failed with exit code: %d\n", exit_code);
+       }
+     }
+
+
    } else if (builtin == BUILTIN_EXIT) {
      exit(0);
+
    } else {
      // non-builtin command
      execute_nonbuiltin(cmd);
