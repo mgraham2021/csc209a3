@@ -187,7 +187,6 @@ int execute_nonbuiltin(simple_command *s) {
 	 */
 
 	if (s->in) {
-		printf("in: %s\n", s->in);
 		int fd_in = open(s->in, O_RDONLY, S_IRUSR | S_IWUSR);
 		dup2(fd_in, fileno(stdin));
 	}
@@ -196,7 +195,8 @@ int execute_nonbuiltin(simple_command *s) {
 		dup2(fd_out, fileno(stdout));
 	}
 	if (s->err) {
-		printf("err: %s\n", s->err);
+		int fd_err = open(s->err, O_WRONLY | O_CREAT, S_IRUSR);
+		dup2(fd_err, fileno(stderr));
 	}
 
 
