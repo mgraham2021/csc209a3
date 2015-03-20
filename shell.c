@@ -291,8 +291,8 @@ int execute_complex_command(command *c) {
 	 * execute these in a piped context, so simply ignore builtin commands.
 	 */
 
-	if (!c->scmd) {
-		printf("in complex\n");
+	if (c->scmd) {
+		execute_nonbuiltin(c->scmd);
 	}
 
 
@@ -312,6 +312,52 @@ int execute_complex_command(command *c) {
 		 * creating the pipe.
 		 */
 
+		int pfd[2];
+		pipe(pfd);
+		pid_t pid[2];
+		//pid_t status;
+
+	  pid[0] = fork();
+
+		if (pid[0] < 0) {
+			perror("fork()");
+		} else if (pid[0] > 0) {
+			// parent
+
+			pid[1] = fork();
+
+			if (pid[1] < 0) {
+				perror("fork()");
+			} else if (pid[1] > 0) {
+				// parent
+
+				// close both ends of the pipe
+				close(pfd[0]);
+				close(pfd[1]);
+
+				wait(NULL);
+				wait(NULL);
+
+			} else if (pid[1] == 0) {
+				// child 2
+
+				// close writing
+				close(pfd[1]);
+
+				dup2(pfd[0], fileno(stdin));
+
+				execute_complex_command(c->cmd2);
+
+			}
+		} else if (pid[0] == 0) {
+			// child
+			// close reading
+			close(pfd[0]);
+
+			dup2(pfd[1], fileno(stdout));
+
+			execute_complex_command(c->cmd1);
+		}
 
 		/**
 		 * TODO: Fork a new process.
